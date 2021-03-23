@@ -1,0 +1,273 @@
+---
+title: "EDA and Data Preprocessing in R"
+author: "Berlin Ryan K P"
+date: "3/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+![](D:/Berlin/WorkHolic/Nguliah/R Project/Kelas Mahir/KM01 Header Notebook.png)
+
+## **Pendahuluan
+
+### Import Library
+```{r}
+library(heatmaply) #Untuk plot heatmap Missing Data
+library(visdat) #Untuk plot Missing Data
+library(reshape2) #Modifikasi DataFrame
+library(tidyr) #Modifikasi DataFrame
+library(ggplot2) #Plot
+library(psych) #Pair Plot
+library(DataExplorer) #Corelation Plot
+library()
+```
+
+### Mengakses Dataset
+```{r}
+df<- read.csv("https://raw.githubusercontent.com/BerlinRKP/Kelas-Mahir-Pejuang-Data-2.0/main/titanic_modify.csv", sep=';',stringsAsFactors = T)
+head( df )
+```
+
+### Tujuan Analisis Data
+Melakukan klasifikasi penumpang yang selamat dan tidak selamat pada kasus tenggelamnya kapal Titanic.
+
+### Memahami dataset
+
+Dataset Titanic dibuat untuk membuat machine learning untuk melakukan klasifikasi biner(Selamat atau Tidak Selamat. Variabel-variabel yang terdapat pada dataset ini adalah sebagai berikut:
+
+1. **PassengerId** = Nomor Id Penumpang 
+2. **Survived** = Keterangan Selamat(0=Tidak, 1=Ya)
+3. **Pclass** = Kelas Tiket (1=Kelas 1, 2=Kelas 2, dst)
+4. **Name** = Nama Penumpang
+5. **Sex** = Jenis kelamin
+6. **Age** = Usia dalam tahun
+7. **SibSp** = Jumlah saudara kandung / pasangan di kapal Titanic
+8. **Parch** = Jumlah orang tua / anak di kapal Titanic
+9. **Ticket** = Nomor Tiket
+10. **Fare** = Harga Tiket
+11. **Cabin** = Nama Kabin
+12. **Embarked** = Pelabuhan Asal (C = Cherbourg, Q = Queenstown, S = Southampton)
+
+## **Eksploratory Data Analysis**
+
+### Dimensi Data
+```{r}
+dim(df)
+```
+Artinya kita memiliki data dengan 12 kolom dan 707 baris
+
+### Variabel Pada Dataset
+```{r}
+names(df)
+```
+Artinya memiliki data dengan variabel nama Passengerid, Survived, Pclass, Name, Sex, Age, Sibsp, Parch, Ticket, Fare, Cabin, Embarked
+
+```{r}
+str(df)
+```
+
+karena pada kolom Cabin terdapat elemen "" maka kita anggap itu termasuk data kosong, jadi diganti dengan NA
+
+```{r}
+df[df== ""] <- NA
+head(df)
+```
+
+###Mengecek Missing Data
+
+Missing data sangat mempengaruhi hasil analisis, pada nantinya akan kita isi atau hapus. Namun sebelumnya dicek keberadaanya terlebih dahulu dengan syntax berikut:
+
+```{r}
+sapply(df, function(x) sum(is.na(x)))
+```
+
+Untuk lebih memudahkan dalam membaca missing data, dapat ditampilkan dalam visualisasi berikut:
+
+```{r}
+heatmaply_na(
+  df[1:20,],
+  showticklabels = c(TRUE, FALSE)
+)
+```
+Hasil plot di atas berupa tampilan interaktif, yang mana bagian dengan warna hitam adalah bagian data yang hilang. Hasil plot di atas efektif untuk data dengan jumlah baris yang sedikit, untuk jumlah data yang banyak dapat digunakan sytax berikut:
+
+```{r}
+vis_miss(df)
+```
+
+Dari ketiga hasil di atas diketahui bahwa kolom dengan missing data adalah kolom Age dan Cabin. Kedua kolom ini perlu mendapat perlakuan khusus nantinya.
+
+### Mengecek Outlier
+Outlier adalah data yang berbeda dengan data lainnya. Nilai ini kadang menjadi nilai yang penting untuk diamati, namun kadang juga menjadi gangguan pada penerapan metode Machine Learning. Pada modul ini, nantinya nilai ini akan dihapus dengan pertimbangan tertentu. Kemudian, untuk melihat apakah ada outlier atau tidak dalam suatu dataset dapat dilihat melalui boxplot berikut:
+```{r}
+num_cols <- unlist(lapply(df, is.numeric)) #Memilih kolom bertipe numerik
+df_num <- df[ , num_cols]  
+boxplot(df_num)
+```
+
+Titik lingkaran di luar boxplot adalah outlier. Sehingga kolom yang mengandung outlier adalah Age, SibSp, Parch, dan Fare.
+
+### Melihat Korelasi Data
+```{r}
+plot_correlation(df_num)
+```
+Perlu dicatat bahwa, missing data membuat hasil plot di atas kurang maksimal. Namun demikian, pada notebook ini kita fokus pada EDA dan Pemodelan SVM jadi kita biarkan dulu. Nanti baru dihapus.
+
+### Melihat Statistik Data
+```{r}
+summary(df)
+```
+```{r}
+d <- melt(df_num)
+```
+```{r}
+ggplot(d,aes(x = value)) + 
+    facet_wrap(~variable,scales = "free_x") + 
+    geom_histogram()
+```
+
+Plot ini untuk melihat apakah variabel-variabel pada dataset berdistribusi normal. Variabel-variabel Age, SibSp, Parch, dan Fare cenderung memiliki skewnes positif. Itu berarti berarti ekor distribusi berada di sebelah kanan nilai terbanyak.
+
+### Pairplot
+```{r}
+pairs.panels(df_num, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE # show correlation ellipses
+             )
+```
+
+## Data Pre Processing
+Data preprocessing ini digunakan guna menyiapkan data untuk diklasifikasi menggunakan metode SVM(Hanya Contoh).
+
+Setelah mengetahui hasil EDA di atas maka untuk hasil yang baik diperlukan beberapa hal sebagai berikut:
+1. Menghapus kolom teks yang tidak diperlukan: **Name** dan **Ticket**
+2. Mengisi NaN pada kolom **Cabin** dengan salah satu nama kabin tertentu*, mengisi NaN pada kolom **Age **dengan nilai rata-ratanya
+3. Melakukan pengkodean(Encoding) pada kolom **Sex** , **Cabin**, dan **Embarked**
+4. Menghapus outlier
+5. Karena nilai data ada yang sangat besar dan kecil maka perlu dilakukan normalisasi
+
+Setelah data diperbaiki dilakukan langkah sebagai berikut:
+1. Memilih variabel independent dan label
+2. Membagi data menjadi data training dan data testing
+
+
+[Note] * Ini hanya contoh untuk melakukan pengisian data NaN(Kosong), nama kabin mungkin menjadi penting sehingga tidak segampang itu diganti
+
+### Seleksi Kolom
+```{r}
+df = subset(df, select = -c(Name, Ticket) )
+head(df)
+```
+
+### Mengisis NaN
+#Mengisi NA pada kolom Age dengan mean(Age)
+```{r}
+df$Age[is.na(df$Age)] = 0
+m<-mean(df$Age)
+df$Age[df$Age==0]<-m
+```
+
+#Mengisi NA pada kolom Cabin dengan E49
+```{r}
+df=df %>% replace_na(list(Cabin = "E49"))
+```
+
+#Mengisi NA pada kolom Embarked dengan C
+```{r}
+df=df %>% replace_na(list(Embarked = "C"))
+```
+
+#Mengecek apakah NA sudah terganti
+```{r}
+sapply(df, function(x) sum(is.na(x)))
+```
+
+```{r}
+head(df)
+```
+
+### Melakukan Pengkodean(Encoding)
+```{r}
+df$Sex<- unclass(df$Sex)
+df$Embarked<- unclass(df$Embarked)
+df$Cabin<- unclass(df$Cabin)
+head(df)
+```
+### Menghapus Outlier
+#' Detect outliers using IQR method
+#' 
+#' @param x A numeric vector
+#' @param na.rm Whether to exclude NAs when computing quantiles
+#' 
+```{r}
+is_outlier <- function(x, na.rm = FALSE) {
+  qs = quantile(x, probs = c(0.25, 0.75), na.rm = na.rm)
+
+  lowerq <- qs[1]
+  upperq <- qs[2]
+  iqr = upperq - lowerq 
+
+  extreme.threshold.upper = (iqr * 3) + upperq
+  extreme.threshold.lower = lowerq - (iqr * 3)
+
+  # Return logical vector
+  x > extreme.threshold.upper | x < extreme.threshold.lower
+}
+```
+
+' Remove rows with outliers in given columns
+#' 
+#' Any row with at least 1 outlier will be removed
+#' 
+#' @param df A data.frame
+#' @param cols Names of the columns of interest. Defaults to all columns.
+#' 
+#' 
+```{r}
+remove_outliers <- function(df, cols = names(df)) {
+  for (col in cols) {
+    cat("Removing outliers in column: ", col, " \n")
+    df <- df[!is_outlier(df[[col]]),]
+  }
+  df
+}
+
+
+vars_of_interest <- c("Age", "SibSp", "Parch", "Fare")
+
+
+df_filtered <- remove_outliers
+```
+
+```{r}
+boxplot(df)
+```
+### Normalisasi Data
+Karena tujuannya adalah klasifikasi menggunakan SVM maka normalisasi data wajib dilakukan.
+```{r}
+unit_length <- function(x) {
+                            x / sqrt(sum(x^2))
+                            }
+unit_length_df <- as.data.frame(lapply(df, unit_length))
+
+head(unit_length_df)
+```
+### Memilih Variable Target & Variabel Independent
+```{r}
+y=df$Survived
+x=data.matrix(df[-c(2)])
+```
+
+### Membagi Data Menjadi Data Training dan Data Testing
+```{r}
+x_train=x[1:7000]
+x_test=x[7001:8019]
+y_train=x[1:7000]
+y_test=x[7001:8019]
+```
+**This is the end of Notebooks**
+say: Allhamdulillah, panjang banget dah
