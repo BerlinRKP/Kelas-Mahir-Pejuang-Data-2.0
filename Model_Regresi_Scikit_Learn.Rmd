@@ -1,0 +1,216 @@
+---
+title: "Model Regresi Scikit Learn"
+author: "Berlin Ryan K P"
+date: "3/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+![](D:/Berlin/WorkHolic/Nguliah/R Project/Kelas Mahir/KM01 Header Notebook.png)
+
+Assalamualaikum warahmatullahi wabarakatuh.
+
+***Robbi Zidni Ilma Warzuqni Fahma***
+
+Semoga Allah memberi kemudahan untuk kita memperoleh ilmu yang bermanfaat.
+
+Ini adalah notebook yang disusun untuk **Kelas Mahir Pejuang Data Sains 2.0** .
+
+Ini adalah **Notebook Model Regresi dengsn Scikit-Learn**:
+
+## **Hasil Yang Ingin Dicapai**
+1. Memahami model regresi
+2. Membangun model regresi dengan modul scikit-learn python
+3. Mengaplikasikan model regresi pada dataset real
+
+### ***!!!***
+
+***Sebelum memulai mempelajari notebook ini, jangan lupa untuk menyalinnya di drive masing-masing ya.***
+
+### ***!!!***
+
+**Apa sih itu Regresi?**
+
+Regresi adalah **ukuran hubungan** ***antara nilai rata-rata dari satu variabel*** (misalnya keluaran) ***dan nilai yang sesuai dari variabel lain*** (misalnya waktu dan biaya).
+
+**Model regresi** adalah ***model yang menghasilkan nilai regresi.***
+
+Data yang digunakan untuk model regresi adalah ***data kontinu***
+
+
+**Apa sih Machine Learning?**
+
+Machine learning adalah aplikasi dari disiplin ilmu kecerdasan buatan (Artificial Intelligence) yang ***menggunakan teknik statistika*** untuk ***menghasilkan suatu model otomatis dari sekumpulan data***, dengan tujuan memberikan komputer kemampuan untuk **"belajar"**.
+
+**Machine Learning Regresi**
+![](D:/Berlin/WorkHolic/Nguliah/R Project/Kelas Mahir/Regresi.png)
+**Tujuan kita** adalah menghasilkan ***garis regresi yang mendekati pola titik-titik data yang sesungguhnya dengan kesalahan sekecil mungkin***.
+
+
+**Dua tipe Machine Learning Regresi Secara Umum**
+
+1. **Model Regresi Statistik**, seperti Linear, Non-Linear, Ridge, Lasso, dll
+
+2. **Model Regresi dengan Jaringan Syaraf Tiruan** (Di Bahas Nanti Yaa)
+
+###***Mengimpor modul***
+```{r}
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(skimr)) install.packages("skimr")
+if(!require(DataExplorer)) install.packages("DataExplorer")
+if(!require(visdat)) install.packages("visdat")
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(skimr)) install.packages("skimr")
+if(!require(DataExplorer)) install.packages("DataExplorer")
+
+library(tidyverse)
+library(skimr)
+library(DataExplorer)
+library(visdat)
+library(tidyverse)
+library(skimr)
+library(DataExplorer)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(readr)
+library(tibble)
+library(ggpubr)
+```
+
+Contoh Data Dua Variabel
+### *Mengakses Dataset*
+```{r}
+df<- read.csv("https://raw.githubusercontent.com/BerlinRKP/Kelas-Mahir-Pejuang-Data-2.0/main/datacontoh.csv",stringsAsFactors = T)
+head(df)
+```
+
+### *Melihat data statistika*
+```{r}
+summary(df)
+```
+
+### *Scatter Plot Data*
+```{r}
+plot(main="Gaji VS Kompensasi", x = df$Total.Salary, y = df$Total.Compensation, pch = 19, cex = 0.8, frame = FALSE, xlab = "Total Gaji", ylab = "Total Kompensasi",col="blue")
+```
+Berdasarkan scatter plot diatas dapat dilihat bahwa kanaikan kompensasi bergantung pada kenaikan gaji
+
+### *Membangun Model Regresi*
+```{r}
+plot(df$Total.Salary,df$Total.Compensation,main = "Gaji VS Kompensasi",xlab = "Total Gaji",ylab ="Total Kompensasi",col="blue")
+abline(lm(df$Total.Compensation~df$Total.Salary),col="red")
+```
+
+```{r}
+ggplot() +
+geom_point(aes(Total.Salary = training_set$Total.Salary, Total.Compensation = training_set$Total.Compensation), colour = 'black') +
+geom_line(aes(Total.Salary = training_set$Total.Salary, Total.Compensation = predict(regressor, newdata = training_set)),colour = 'red') +
+ggtitle('Total Kompensasi vs Total Gaji (training_set)')
+xlab('Total Gaji')
+ylab('Total Kompensasi')
+```
+##**Real Project Model Regresi**
+###**Mengakses Dataset**
+```{r}
+df1<- read.csv("https://raw.githubusercontent.com/BerlinRKP/Kelas-Mahir-Pejuang-Data-2.0/main/train.csv",stringsAsFactors = T)
+head(df1)
+```
+###**Eksplorasi Data(Exploration Data Analysis)**
+##*Melihat ukuran data*
+```{r}
+dim(df1)
+```
+Data memiliki 1460 baris dan 82 kolom
+
+##*Melihat statistik deskriptif dataset*
+```{r}
+summary(df1)
+```
+
+##*Melihat distribusi kolom target(harga rumah)*
+```{r}
+p1 <- df1 %>%
+  ggplot(aes(x = SalePrice)) +
+  geom_histogram(aes(x = SalePrice, stat(density)),
+                 bins = 100,
+                 fill = "cornflowerblue",
+                 alpha = 0.7) +
+  geom_density(color = "midnightblue") +
+  scale_x_continuous(breaks= seq(0, 800000, by=100000), labels = scales::comma) +
+  labs(x = "Sale Price", y = "", title = "Density of Sale Price") +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1))
+p1
+```
+##*Melihat informasi kolom dataset*
+```{r}
+str(df1)
+```
+
+##*Melihat nilai korelasi antar variabel numerik*
+```{r}
+df1[1:5] %>%
+  mutate_if(is.numeric, log) %>%
+  plot_correlation()
+```
+
+###**Data Cleaning**
+##*Kodifikasi untuk data bertipe kategori*
+
+##*Mengisi missing value*
+#Melihat Missing Value
+```{r}
+vis_miss (df1[1:30]) 
+```
+Dari gambar diatas terlihat bahwa yang memiliki nilai hilang adalah LotFrontage dan MasVnrArea
+
+```{r}
+colSums(is.na(df1))
+```
+Artinya dari adat diatas terdapat missing data pada variabel nama MasVnrArea sejumlah 8 dan pada variabel nama LotFrontage sejumlah 259
+
+**Memperbaiki nilai yang hilang pada kolom LotFrontage **
+```{r}
+df1$LotFrontage=ifelse(is.na(df1$LotFrontage),
+                        ave(df1$LotFrontage,FUN=function(x) mean(x,na.rm=TRUE)),
+                        df1$LotFrontage)
+```
+**Memperbaiki nilai yang hilang pada kolom MasVnrArea **
+```{r}
+df1$MasVnrArea=ifelse(is.na(df1$MasVnrArea),
+                        ave(df1$MasVnrArea,FUN=function(x) mean(x,na.rm=TRUE)),
+                        df1$MasVnrArea)
+```
+
+###**Normalisasi data target**
+```{r}
+unit_length <- function(x){
+                            x/sqrt(sum(x^2))
+                            }
+unit_length_df1 <- as.data.frame(lapply(df1, unit_length))
+```
+
+```{r}
+head(unit_length_df1)
+```
+
+```{r}
+shapiro.test(df1$SalePrice)
+```
+### **Model Regresi Linear**
+
+```{r}
+model = lm(X~SalePrice, data=df1)
+summary(model)
+
+```
+
+###**Grafik Linear Regresi**
+```{r}
+g1= plot(df1$X,df1$SalePrice,xlab = "X",ylab ="Sale Price",col="blue")
+abline(lm(df1$X~df1$SalePrice),col="red")
+```
+
+
